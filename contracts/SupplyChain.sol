@@ -1,6 +1,7 @@
 pragma solidity ^0.4.23;
+import "./SupplyChainItemState.sol";
 
-contract SupplyChain {
+contract SupplyChain is SupplyChainItemState {
 
     /* set owner */
     address owner;
@@ -20,7 +21,9 @@ contract SupplyChain {
         Received
         (declaring them in this order is important for testing)
     */
-    enum State { ForSale, Sold, Shipped, Received }
+
+    /* Moving this enum into a separate contract to enable referring to it by */
+    //enum State { ForSale, Sold, Shipped, Received }
 
     /* Create a struct named Item.
         Here, add a name, sku, price, state, seller, and buyer
@@ -43,16 +46,14 @@ contract SupplyChain {
     event Shipped(uint sku);
     event Received(uint sku);
 
-    /* Create a modifer that checks if the msg.sender is the owner of the contract */
-    modifier ownerOnly {
-        require (msg.sender == owner);
-        _;
-    }
-    modifier verifyCaller (address _address) { require (msg.sender == _address); _;}
+    /* Create a modifier that checks if the msg.sender is the owner of the contract */
+    modifier onlyOwner {require (msg.sender == owner, "owner access only"); _;}
+    modifier verifyCaller (address _address) {require (msg.sender == _address, "invalid caller"); _;}
+    modifier paidEnough(uint _price) {require(msg.value >= _price, "insufficient funds sent"); _;}
 
-    modifier paidEnough(uint _price) { require(msg.value >= _price); _;}
     modifier checkValue(uint _sku) {
-        //refund them after pay for item (_ is placed before because (why it is before), _ checks for logic before func)
+        // refund them after pay for item (_ is placed before because (why it is before),
+        // _ checks for logic before func)
         _;
         uint _price = items[_sku].price;
         uint amountToRefund = msg.value - _price;
@@ -138,4 +139,9 @@ contract SupplyChain {
         return (name, sku, price, state, seller, buyer);
     }
 
+    // function to test onlyOwner modifier
+    function accessByOwner() public view onlyOwner() returns(bool) {
+        // will only return if modifier conditions are met
+        return true;
+    }
 }
