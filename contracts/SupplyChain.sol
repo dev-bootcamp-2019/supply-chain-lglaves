@@ -1,13 +1,13 @@
-pragma solidity ^0.4.23;
+pragma solidity ^0.5.0;
 import "./SupplyChainItemState.sol";
 
 contract SupplyChain is SupplyChainItemState {
 
     /* set owner */
-    address owner;
+    address public owner;
 
     /* Add a variable called skuCount to track the most recent sku # */
-    uint skuCount;
+    uint public skuCount;
 
     /* Add a line that creates a public mapping that maps the SKU (a number) to an Item.
         Call this mappings items
@@ -35,8 +35,8 @@ contract SupplyChain is SupplyChainItemState {
         uint sku;
         uint price;
         State state;
-        address seller;
-        address buyer;
+        address payable seller;
+        address payable buyer;
     }
 
     /* Create 4 events with the same name as each possible State (see above)
@@ -76,9 +76,9 @@ contract SupplyChain is SupplyChainItemState {
         skuCount = 0;
     }
 
-    function addItem(string _name, uint _price) public {
+    function addItem(string memory _name, uint _price) public {
         emit ForSale(skuCount);
-        items[skuCount] = Item({name: _name, sku: skuCount, price: _price, state: State.ForSale, seller: msg.sender, buyer: 0});
+        items[skuCount] = Item({name: _name, sku: skuCount, price: _price, state: State.ForSale, seller: msg.sender, buyer: address(0)});
         skuCount = skuCount + 1;
     }
 
@@ -100,10 +100,9 @@ contract SupplyChain is SupplyChainItemState {
     checkValue(sku)// Refund any excess due to buyer?
     {
         items[sku].buyer = msg.sender;  // set buyer as the person who called the transaction
-        uint _price = items[sku].price;
-        items[sku].seller.transfer(_price);
-        emit Sold(sku);
+        items[sku].seller.transfer(items[sku].price);
         items[sku].state = State.Sold;
+        emit Sold(sku);
     }
 
     /* Add 2 modifiers to check if the item is sold already, and that the person calling this function
@@ -119,17 +118,30 @@ contract SupplyChain is SupplyChainItemState {
 
     /* Add 2 modifiers to check if the item is shipped already, and that the person calling this function
     is the buyer. Change the state of the item to received. Remember to call the event associated with this function!*/
+
+    modifier isShipped(uint _sku) {
+        require(items[_sku].state == State.Shipped);
+        _;
+    }
+
+    modifier isBuyer(uint _sku) {
+        require(items[_sku].buyer == msg.sender);
+        _;
+    }
+
     function receiveItem(uint sku)
     public
-    shipped(sku)
-    verifyCaller(items[sku].buyer)
+    isShipped(sku)
+    isBuyer(sku)
+    returns (bool)
     {
         items[sku].state = State.Received;
         emit Received(sku);
+        return true;
     }
 
     /* We have these functions completed so we can run tests, just ignore it :) */
-    function fetchItem(uint _sku) public view returns (string name, uint sku, uint price, uint state, address seller, address buyer) {
+    function fetchItem(uint _sku) public view returns (string memory name, uint sku, uint price, uint state, address seller, address buyer) {
         name = items[_sku].name;
         sku = items[_sku].sku;
         price = items[_sku].price;

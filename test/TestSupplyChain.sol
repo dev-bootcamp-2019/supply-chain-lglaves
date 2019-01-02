@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.5.0;
 
 import "truffle/Assert.sol";
 import "truffle/DeployedAddresses.sol";
@@ -25,7 +25,7 @@ contract TestSupplyChain {
     // test calling the function from an address that is not the buyer
     // test calling the function on an item not marked Shipped
 
-     
+
 
 
 }
